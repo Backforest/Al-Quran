@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Al Qur'an</title>
+<meta name="description" content="Online Al Quran with translation. Created by Blackforest Yasir.">
+<meta name="keywords" content="Al Quran, Quran Online, Quran Translation, Blackforest Yasir">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#f4f4f4;
+  --card:#fff;
+  --text:#000;
+}
+.dark{
+  --bg:#121212;
+  --card:#1e1e1e;
+  --text:#fff;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial;
+  padding:15px;
+}
+h1,h2{text-align:center;color:green;}
+#topbar{text-align:center;margin-bottom:10px;}
+input,button{
+  padding:8px;
+  margin:4px;
+}
+.card{
+  background:var(--card);
+  padding:15px;
+  margin-bottom:10px;
+  border-left:5px solid green;
+}
+.card:hover{opacity:.9;}
+.arabic{
+  font-size:26px;
+  direction:rtl;
+  text-align:right;
+}
+.eng{margin-top:5px;}
+.urdu{
+  direction:rtl;
+  font-family:"Noto Nastaliq Urdu", serif;
+}
+audio{width:100%;margin-top:8px;}
+@media(max-width:600px){
+  .arabic{font-size:22px;}
+}
+</style>
+</head>
+
+<body>
+
+<h1>📖 Al Qur'an</h1>
+
+<div id="topbar">
+  <button onclick="loadSurahs()">🏠 Surahs</button>
+  <button onclick="toggleDark()">🌙 Dark</button><br>
+  <input id="searchBox" placeholder="Search ayah..." onkeyup="searchAyah()">
+</div>
+
+<div id="content"></div>
+
+<script>
+let allAyahs=[];
+const content=document.getElementById("content");
+
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
+
+function loadSurahs(){
+  content.innerHTML="Loading...";
+  fetch("https://api.alquran.cloud/v1/surah")
+  .then(r=>r.json())
+  .then(d=>{
+    let h="";
+    d.data.forEach(s=>{
+      h+=`<div class="card" onclick="loadSurah(${s.number})">
+      ${s.number}. ${s.englishName} (${s.name})
+      </div>`;
+    });
+    content.innerHTML=h;
+  });
+}
+
+function loadSurah(n){
+  content.innerHTML="Loading Surah...";
+  fetch(`https://api.alquran.cloud/v1/surah/${n}/editions/quran-uthmani,en.asad,ur.jalandhry`)
+  .then(r=>r.json())
+  .then(d=>{
+    let ar=d.data[0].ayahs,
+        en=d.data[1].ayahs,
+        ur=d.data[2].ayahs;
+    allAyahs=[];
+    let h=`<h2>${d.data[0].englishName}</h2>`;
+    for(let i=0;i<ar.length;i++){
+      allAyahs.push({
+        a:ar[i].text,
+        e:en[i].text,
+        u:ur[i].text,
+        n:ar[i].number
+      });
+      h+=renderAyah(ar[i].text,en[i].text,ur[i].text,ar[i].number);
+    }
+    content.innerHTML=h;
+  });
+}
+
+function renderAyah(a,e,u,n){
+return `
+<div class="card">
+  <div class="arabic">${a}</div>
+  <div class="eng">${e}</div>
+  <div class="urdu">${u}</div>
+  <audio controls loop>
+    <source src="https://cdn.islamic.network/quran/audio/128/ar.alafasy/${n}.mp3">
+  </audio>
+</div>`;
+}
+
+function searchAyah(){
+  let q=document.getElementById("searchBox").value.toLowerCase();
+  if(q.length<2){return;}
+  let h="<h2>Search Results</h2>";
+  allAyahs.filter(x =>
+    x.a.includes(q) ||
+    x.e.toLowerCase().includes(q) ||
+    x.u.includes(q)
+  ).forEach(x=>{
+    h+=renderAyah(x.a,x.e,x.u,x.n);
+  });
+  content.innerHTML=h || "No result";
+}
+
+loadSurahs();
+</script>
+
+</body>
+</html>
